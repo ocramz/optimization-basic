@@ -24,6 +24,7 @@ library
                        Numeric.Optimization.Basic.LP
   build-depends:       base >= 4.7 && < 5
                      , containers
+                     , hspec >= 2.2.3
                      , sparse-linear-algebra
 
 executable optimization-basic
@@ -32,6 +33,7 @@ executable optimization-basic
   hs-source-dirs:      app
   main-is:             Main.hs
   build-depends:       base
+                     , hspec >= 2.2.3
                      , optimization-basic
 
 test-suite spec
@@ -41,10 +43,11 @@ test-suite spec
   hs-source-dirs:      test
   main-is:             Spec.hs
   other-modules:       LibSpec
-  build-depends:       base
-                     , optimization-basic
+  build-depends:       QuickCheck
+                     , base
                      , hspec
-                     , QuickCheck
+                     , hspec >= 2.2.3
+                     , optimization-basic
 
 source-repository head
   type:     git

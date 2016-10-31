@@ -36,7 +36,8 @@ where B(x) := sum_j( log(x_j) )
 
 
 
--- | Update primal `x`, dual `y` and slack `s` variables by applying Newton's method to the KKT system of the log-penalized LP. This requires one linear solve and a line search for a stepsize `alpha` that preserves feasibility : (x, s) > 0.
+-- | Update primal `x`, dual `y` and slack `s` variables by applying Newton's method to the KKT system of the log-penalized LP.
+-- This requires one linear solve and a line search for a stepsize `alpha` that preserves feasibility : (x, s) > 0.
 -- NB : It assumes the dimensions of vectors are x :: Rn , y :: Rm , s :: Rn 
 pdIpLPstep ::
   (SpVector Double ->
@@ -59,10 +60,9 @@ pdIpLPstep chooseAlpha aa tau (x, y, s, k) = (xNew, yNew, sNew, k+1) where
   amat = arow1 -=- (arow2 -=- arow3)
   rhs = concatSV zvn $ concatSV zvm $ negated (xx #> s) ^+^ (rho .* onesSV m)
   xysStep = amat <\> rhs
-  xStep = takeSV n xysStep
-  yStep = takeSV m (dropSV n xysStep)
-  sStep = dropSV (m+n) xysStep
-  -- xys = concatSV x $ concatSV y s
+  xStep = takeSV n xysStep            -- 0 .. n-1            
+  yStep = takeSV m (dropSV n xysStep) -- n .. n+m-1
+  sStep = dropSV (m + n) xysStep      -- n+m .. 2n+m 
   xNew = x ^+^ (alpha .* xStep)
   yNew = y ^+^ (alpha .* yStep)
   sNew = s ^+^ (alpha .* sStep)  
@@ -73,3 +73,11 @@ pdIpLPstep chooseAlpha aa tau (x, y, s, k) = (xNew, yNew, sNew, k+1) where
   zvn = zeroSV n
   zvm = zeroSV m
 
+
+
+feasX :: (Foldable t, Ord a, Num a) => t a -> Bool
+feasX = all (> 0)
+
+
+
+linesearch amax x s dx ds = undefined where
