@@ -1,2 +1,5 @@
 # optimization-basic
-Basic methods for numerical optimization in native Haskell
+
+[![Build Status](https://travis-ci.org/ocramz/optimization-basic.png)](https://travis-ci.org/ocramz/optimization-basic)
+
+TODO Description.
