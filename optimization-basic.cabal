@@ -20,11 +20,11 @@ library
   hs-source-dirs:      src
   exposed-modules:     Lib
                        Data.Sparse
-                       Data.Sparse.IntMap
                        Numeric.Optimization.Basic.LP
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , hspec >= 2.2.3
+                     , mtl
                      , sparse-linear-algebra
 
 executable optimization-basic
@@ -33,7 +33,6 @@ executable optimization-basic
   hs-source-dirs:      app
   main-is:             Main.hs
   build-depends:       base
-                     , hspec >= 2.2.3
                      , optimization-basic
 
 test-suite spec
@@ -46,6 +45,7 @@ test-suite spec
   build-depends:       QuickCheck
                      , base
                      , hspec
+                     , hspec >= 2.2.3
                      , hspec >= 2.2.3
                      , optimization-basic
 

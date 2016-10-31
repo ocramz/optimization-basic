@@ -15,6 +15,9 @@
 module Numeric.Optimization.Basic.LP where
 
 
+import Control.Monad.State
+
+
 import Data.Sparse -- (reexports Data.Sparse.Common from sparse-linear-algebra)
 
 import Numeric.LinearAlgebra.Sparse
@@ -81,3 +84,54 @@ feasX = all (> 0)
 
 
 linesearch amax x s dx ds = undefined where
+
+
+
+-- * Karmarkar algorithm
+
+
+  
+karmIpLP :: SpMatrix Double -> SpVector Double -> KarmLPData
+karmIpLP aa c = execState (untilConverged (\x -> c `dot` _xKarm x) (karmarkarLPstep aa c ar)) kInit
+  where
+   ar = alpha * r
+   kInit = KarmLPData x0 y0 0
+   (m, n) = dimSM aa
+   n' = fromIntegral n
+   r = 1 / sqrt (n' * (n'-1))
+   alpha = (n' - 1)/ (3*n')
+   x0 = recip (fromIntegral n) .* onesSV n
+   y0 = x0
+
+data KarmLPData =
+  KarmLPData { _xKarm, _yKarm:: SpVector Double, _niter :: Int } deriving (Eq, Show)
+  
+  
+-- | alphar = alpha * r
+karmarkarLPstep ::
+  SpMatrix Double -> SpVector Double -> Double -> KarmLPData -> KarmLPData
+karmarkarLPstep aa c alphar (KarmLPData x y k) = KarmLPData xnew ynew (k + 1) where
+  (m, n) = dim aa
+  ddk = diagonalSM x
+  pp = (aa #~# ddk) -=- svToSM (onesSV n)
+  cdk = c <# ddk
+  cp = cdk ^-^ (transposeSM pp #> ((pp ##^ pp) <\> (pp #> cdk)))
+  cp0 = normalize 2 cp
+  ynew = y ^-^ (alphar .* cp0)
+  dy = ddk #> ynew
+  xnew = recip (sum dy) .* dy
+  -- z = c `dot` xnew
+
+
+
+-- linObjConverged c = modifyInspectN 200 (fproj c _xKarm) where
+--   fproj c f [x1, x2] = almostZero $ c `dot` f x1 - c `dot` f x2
+
+---
+
+-- untilConverged :: MonadState a m => (a -> SpVector Double) -> (a -> a) -> m a
+untilConverged fproj = modifyInspectN 200 (normDiffConverged fproj)
+
+normDiffConverged f [x1,x2] = almostZero $ f x1 - f x2
+
+-- normDiffConverged fp xx = nearZero $ normSq (foldrMap fp (^-^) (zeroSV 0) xx)
