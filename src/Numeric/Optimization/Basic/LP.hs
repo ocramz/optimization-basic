@@ -23,58 +23,7 @@ import Data.Sparse -- (reexports Data.Sparse.Common from sparse-linear-algebra)
 import Numeric.LinearAlgebra.Sparse
 
 
-{- |
-Penalized LP (PLP):
 
-max_x <c, x> - rho B(x)
-
-s.t. A x = b
-
-where B(x) := sum_j( log(x_j) ) 
-
-1. Write Lagrangian for PLP L(x, rho, y)
-2. Write KKT conditions (first order optimality of L(x, rho, y))
-3. Write Newton equations for KKT system
--}
-
-
-
--- | Update primal `x`, dual `y` and slack `s` variables by applying Newton's method to the KKT system of the log-penalized LP.
--- This requires one linear solve and a line search for a stepsize `alpha` that preserves feasibility : (x, s) > 0.
--- NB : It assumes the dimensions of vectors are x :: Rn , y :: Rm , s :: Rn 
-pdIpLPstep ::
-  (SpVector Double ->
-   SpVector Double ->
-   SpVector Double ->
-   SpVector Double ->
-   Double) ->
-  SpMatrix Double ->
-  Double ->
-  (SpVector Double, SpVector Double, SpVector Double, Int) ->
-  (SpVector Double, SpVector Double, SpVector Double, Int)
-pdIpLPstep chooseAlpha aa tau (x, y, s, k) = (xNew, yNew, sNew, k+1) where
-  gamma = (x `dot` s) / fromIntegral n  -- duality measure
-  rho = tau * gamma                     -- Lagrange multiplier of barrier penalty
-  ss = diagonalSM s 
-  xx = diagonalSM x
-  arow1 = zn -||- transposeSM aa -||- eye n
-  arow2 = aa -||- zm             -||- zm
-  arow3 = ss -||- zm             -||- xx
-  amat = arow1 -=- (arow2 -=- arow3)
-  rhs = concatSV zvn $ concatSV zvm $ negated (xx #> s) ^+^ (rho .* onesSV m)
-  xysStep = amat <\> rhs
-  xStep = takeSV n xysStep            -- 0 .. n-1            
-  yStep = takeSV m (dropSV n xysStep) -- n .. n+m-1
-  sStep = dropSV (m + n) xysStep      -- n+m .. 2n+m 
-  xNew = x ^+^ (alpha .* xStep)
-  yNew = y ^+^ (alpha .* yStep)
-  sNew = s ^+^ (alpha .* sStep)  
-  alpha = chooseAlpha x s xStep sStep
-  (m, n) = dim aa
-  zm = zeroSM m m
-  zn = zeroSM n n
-  zvn = zeroSV n
-  zvm = zeroSV m
 
 
 
@@ -123,15 +72,71 @@ karmarkarLPstep aa c alphar (KarmLPData x y k) = KarmLPData xnew ynew (k + 1) wh
   -- z = c `dot` xnew
 
 
-
--- linObjConverged c = modifyInspectN 200 (fproj c _xKarm) where
---   fproj c f [x1, x2] = almostZero $ c `dot` f x1 - c `dot` f x2
-
----
-
 -- untilConverged :: MonadState a m => (a -> SpVector Double) -> (a -> a) -> m a
 untilConverged fproj = modifyInspectN 200 (normDiffConverged fproj)
 
-normDiffConverged f [x1,x2] = almostZero $ f x1 - f x2
+normDiffConverged f [x1,x2] = nearZero $ f x1 - f x2
 
 -- normDiffConverged fp xx = nearZero $ normSq (foldrMap fp (^-^) (zeroSV 0) xx)
+
+
+
+
+
+
+
+
+
+{- |
+Interior point, log-penalized LP (PLP):
+
+max_x <c, x> - rho B(x)
+
+s.t. A x = b
+
+where B(x) := sum_j( log(x_j) )  (i.e. non-negativity constraint)
+
+1. Write Lagrangian for PLP L(x, rho, y)
+2. Write KKT conditions (first order optimality of L(x, rho, y))
+3. Write Newton equations for KKT system
+-}
+
+
+
+-- | Update primal `x`, dual `y` and slack `s` variables by applying Newton's method to the KKT system of the log-penalized LP.
+-- This requires one linear solve and a line search for a stepsize `alpha` that preserves feasibility : (x, s) > 0.
+-- NB : It assumes the dimensions of vectors are x :: Rn , y :: Rm , s :: Rn 
+
+-- pdIpLPstep ::
+--   (SpVector Double ->
+--    SpVector Double ->
+--    SpVector Double ->
+--    SpVector Double ->
+--    Double) ->
+--   SpMatrix Double ->
+--   Double ->
+--   (SpVector Double, SpVector Double, SpVector Double, Int) ->
+--   (SpVector Double, SpVector Double, SpVector Double, Int)
+-- pdIpLPstep chooseAlpha aa tau (x, y, s, k) = (xNew, yNew, sNew, k+1) where
+--   gamma = (x `dot` s) / fromIntegral n  -- duality measure
+--   rho = tau * gamma                     -- Lagrange multiplier of barrier penalty
+--   ss = diagonalSM s 
+--   xx = diagonalSM x
+--   arow1 = zn -||- transposeSM aa -||- eye n
+--   arow2 = aa -||- zm             -||- zm
+--   arow3 = ss -||- zm             -||- xx
+--   amat = arow1 -=- (arow2 -=- arow3)
+--   rhs = concatSV zvn $ concatSV zvm $ negated (xx #> s) ^+^ (rho .* onesSV m)
+--   xysStep = amat <\> rhs
+--   xStep = takeSV n xysStep            -- 0 .. n-1            
+--   yStep = takeSV m (dropSV n xysStep) -- n .. n+m-1
+--   sStep = dropSV (m + n) xysStep      -- n+m .. 2n+m 
+--   xNew = x ^+^ (alpha .* xStep)
+--   yNew = y ^+^ (alpha .* yStep)
+--   sNew = s ^+^ (alpha .* sStep)  
+--   alpha = chooseAlpha x s xStep sStep
+--   (m, n) = dim aa
+--   zm = zeroSM m m
+--   zn = zeroSM n n
+--   zvn = zeroSV n
+--   zvm = zeroSV m

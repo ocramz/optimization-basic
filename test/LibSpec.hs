@@ -54,22 +54,7 @@ s0 = fromListDenseSV 2 [3,3]
 -- optimum
 xOpt = fromListDenseSV 2 [8/3, 2/3]
 
--- smoke test
-alpha0 = 0.5
-tau = 0.3
-(x0', y0', s0', _) = pdIpLPstep (\_ _ _ _ -> alpha0) aa0 tau (x0, y0, s0, 1)
 
-
-testAmat aa x s = amat where
-  (m,n) = dim aa
-  ss = diagonalSM s 
-  xx = diagonalSM x  
-  arow1 = zn -||- transposeSM aa -||- eye n
-  arow2 = aa -||- zm             -||- zm
-  arow3 = ss -||- zm             -||- xx
-  amat = arow1 -=- (arow2 -=- arow3)
-  zm = zeroSM m m
-  zn = zeroSM n n
 
 
 --
@@ -110,3 +95,32 @@ xOpt1 = fromListDenseSV 3 [0, 1/3, 2/3]
 
 
 (KarmLPData x y niter) = karmIpLP aa1 c1
+
+
+
+
+
+
+
+
+
+
+-- interior point method
+
+
+-- -- smoke test
+-- alpha0 = 0.5
+-- tau = 0.3
+-- (x0', y0', s0', _) = pdIpLPstep (\_ _ _ _ -> alpha0) aa0 tau (x0, y0, s0, 1)
+
+
+-- testAmat aa x s = amat where
+--   (m,n) = dim aa
+--   ss = diagonalSM s 
+--   xx = diagonalSM x  
+--   arow1 = zn -||- transposeSM aa -||- eye n
+--   arow2 = aa -||- zm             -||- zm
+--   arow3 = ss -||- zm             -||- xx
+--   amat = arow1 -=- (arow2 -=- arow3)
+--   zm = zeroSM m m
+--   zn = zeroSM n n
